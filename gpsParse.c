@@ -17,10 +17,7 @@ double toDoubleTenths(char* s, int start, int stop) {
     int i = 0;
     char newChar[] = ".";
     for (i = start; i <= stop; i++) {
-        printf(" char=%c\n",s[i]);
-        printf("newChar before = %s\n", newChar);
         newChar[m] = s[i];
-        printf("newChar after = %s\n", newChar);
         m++;
     }
     return atof(newChar);
@@ -28,10 +25,12 @@ double toDoubleTenths(char* s, int start, int stop) {
 
 int main(int arg) {
   typedef enum { false, true } bool;
-  char in_string[] = "$GPGLL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
+  char in_string[] = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
   char out_buffer[] = "";
   double lat_value = 0.0;
   double lon_value = 0.0;
+  double temp_lon = 0.0;
+  double temp_lat = 0.0;
   printf("%d\n", (int)sizeof(in_string));
   int i;
   bool reading = false;
@@ -54,6 +53,17 @@ int main(int arg) {
             reading = false;
             printf("%s\n","End of value");
             value_end = i;
+            if(value_count == 0) {
+              temp_lat += toDoubleTenths(in_string, value_seconds, i-1);
+              printf("temp_lat=%f",temp_lat);
+              lat_value += temp_lat/60.0;
+            }
+            else {
+              temp_lon += toDoubleTenths(in_string, value_seconds, i-1);
+              printf("temp_lon=%f",temp_lon);
+              lon_value += temp_lon/60.0;
+            }
+            printf("LAT=%f LON=%f\n",lat_value, lon_value);
             //get seconds
             //value *= sign;//get sign
             value_count++;
@@ -64,11 +74,13 @@ int main(int arg) {
           if(reading) {
             if(value_count == 0) {
               lat_value += toDouble(in_string, value_start, i-3);
-              lat_value += toDoubleTenths(in_string, i-2, i-1);
+              temp_lat += toDouble(in_string, i-2, i-1);
+              printf("temp_lat=%f",temp_lat);
             }
             else {
               lon_value += toDouble(in_string, value_start, i-3);
-              lon_value += toDoubleTenths(in_string, i-2, i-1);
+              temp_lon += toDouble(in_string, i-2, i-1);
+              printf("temp_lon=%f",temp_lon);
             }
             printf("LAT=%f LON=%f\n",lat_value, lon_value);
             value_seconds = i+1;
