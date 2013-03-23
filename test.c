@@ -2,35 +2,21 @@
 #include <stdlib.h> 
 #include <math.h>
 
-double toDouble(char* s, int start, int stop) {
-    long int m = 1;
-    int i = 0;
-    double ret = 0;
-    for (i = stop; i >= start; i--) {
-        printf(" char=%c\n",s[i]);
-        printf("ret before = %f\n", ret);
-        ret += (s[i] - '0') * m;
-        printf("ret after = %f\n", ret);
-        m *= 10;
-    }
-    return ret;
-}
-double toDoubleTenths(char* s, int start, int stop) {
-    int m = 1;
-    int i = 0;
-    char newChar[] = ".";
-    for (i = start; i <= stop; i++) {
-        printf(" char=%c\n",s[i]);
-        printf("newChar before = %s\n", newChar);
-        newChar[m] = s[i];
-        printf("newChar after = %s\n", newChar);
-        m++;
-    }
-    return atof(newChar);
+void myFunction(char* in_string, char* out_string) {
+  printf("Start_String=%s\n", in_string);
+  int in_size = (int)(sizeof(in_string));
+  printf("%d\n", in_size);
+  int i = 0;
+  for(i = 0; i <= in_size-ceil(in_size/2); i++) {
+    //printf("%d\n", i);
+    out_string[i] = in_string[i];
+  }
 }
 
 int main(int arg) {
-  char in_string[] = "4014.84954";
-  printf("VALUE = %f\n",toDouble(in_string, 0, 1));
-  printf("VALUE = %f\n",toDoubleTenths(in_string, 2, 3));
+  char in_string[] = "LL,4014.84954";
+  char out_string[] = "";
+  printf("In_String=%s\n", in_string);
+  myFunction(in_string, out_string);
+  printf("Out_String=%s\n", out_string);
 }
