@@ -12,11 +12,12 @@ void myFunction(char* in_string, char* out_string) {
     //printf("%d\n", i);
     out_string[i] = in_string[i];
   }
+  out_string[i] = '\0'; //null terminate always
 }
 
 int main(int arg) {
   char in_string[] = "LL,4014.84954";
-  char out_string[] = "";
+  char* out_string = malloc(strlen(in_string)+1);
   printf("In_String=%s\n", in_string);
   myFunction(in_string, out_string);
   printf("Out_String=%s\n", out_string);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <math.h>
+#include <string.h>
 
 typedef enum { false, true } bool;
 
@@ -40,15 +41,16 @@ double getSign(char sign_char) {
     }
 }
 
-void parseGpsMsg(char in_string[], char* out_string) {
+void parseGpsMsg(char* in_string, char* out_string) {
   char out_buffer[] = "";
   double lat_value = 0.0;
   double lon_value = 0.0;
   double temp_lon = 0.0;
   double temp_lat = 0.0;
+  int in_size = strlen(in_string);
   printf("In_String=%s\n", in_string);
-  printf("%d\n", (int)(sizeof(in_string) / sizeof(in_string[0])));
-  int i;
+  printf("%d\n", in_size);
+  int i = 0;
   bool reading = false;
   int value_count = 0;
   int value_start = 0;
@@ -56,7 +58,7 @@ void parseGpsMsg(char in_string[], char* out_string) {
   int value_end = 0;
   int minute_start = 0;
   double sign = 0.0;
-  for(i = 0; i <= (int)(sizeof(in_string) / sizeof(in_string[0])); i++) {
+  for(i = 0; i <= in_size; i++) {
     if(value_count < 2) {
     printf("%c\n", in_string[i]);
       switch(in_string[i]){
@@ -106,16 +108,21 @@ void parseGpsMsg(char in_string[], char* out_string) {
           }
           break;
         default :
-          printf("%s\n", "BROKEN MAIN");
             ;
       }
     }
+  }
+  char message[in_size];// = strcat((char *)&lat_value, "\0");// +" done\0";
+  sprintf(message, "LAT=%f LON=%f", lat_value, lon_value);
+//  message = strcat(message, " done\0");
+  for(i = 0; i <= strlen(message); i++) {
+    out_string[i] = message[i];
   }
 }
 
 int main(int arg) {
   char in_string[] = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
-  char out_string[] = "";
+  char* out_string = malloc(strlen(in_string)+1);
   printf("In_String=%s\n", in_string);
   parseGpsMsg(in_string, out_string);
   printf("Out_String=%s\n", out_string);
