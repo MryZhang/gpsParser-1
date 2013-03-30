@@ -15,10 +15,14 @@ void myFunction(char* in_string, char* out_string) {
   out_string[i] = '\0'; //null terminate always
 }
 
+void tester(char* test) {
+  int i = 0;
+  printf("%c\n", test[i]);
+  char* temp = test[i];
+  
+}
+
 int main(int arg) {
-  char in_string[] = "LL,4014.84954";
-  char* out_string = malloc(strlen(in_string)+1);
-  printf("In_String=%s\n", in_string);
-  myFunction(in_string, out_string);
-  printf("Out_String=%s\n", out_string);
+  char* myChar = "a";
+  tester(myChar);
 }
