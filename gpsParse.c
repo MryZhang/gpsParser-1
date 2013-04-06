@@ -1,9 +1,85 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <math.h>
-#include <string.h>
 
 typedef enum { false, true } bool;
+
+static double PRECISION = 0.00000000000001;
+static int MAX_NUMBER_STRING_SIZE = 32;
+/**
+ * Double to ASCII
+ */
+char * dtoa(char *s, double n) {
+    // handle special cases
+    if (isnan(n)) {
+        s = "nan";
+    } else if (isinf(n)) {
+        s = "inf";
+    } else if (n == 0.0) {
+        s = "0";
+    } else {
+        int digit, m, m1;
+        char *c = s;
+        int neg = (n < 0);
+        if (neg)
+            n = -n;
+        // calculate magnitude
+        m = log10(n);
+        int useExp = (m >= 14 || (neg && m >= 9) || m <= -9);
+        if (neg)
+            *(c++) = '-';
+        // set up for scientific notation
+        if (useExp) {
+            if (m < 0)
+               m -= 1.0;
+            n = n / pow(10.0, m);
+            m1 = m;
+            m = 0;
+        }
+        if (m < 1.0) {
+            m = 0;
+        }
+        // convert the number
+        while (n > PRECISION || m >= 0) {
+            double weight = pow(10.0, m);
+            if (weight > 0 && !isinf(weight)) {
+                digit = floor(n / weight);
+                n -= (digit * weight);
+                *(c++) = '0' + digit;
+            }
+            if (m == 0 && n > 0)
+                *(c++) = '.';
+            m--;
+        }
+        if (useExp) {
+            // convert the exponent
+            int i, j;
+            *(c++) = 'e';
+            if (m1 > 0) {
+                *(c++) = '+';
+            } else {
+                *(c++) = '-';
+                m1 = -m1;
+            }
+            m = 0;
+            while (m1 > 0) {
+                *(c++) = '0' + m1 % 10;
+                m1 /= 10;
+                m++;
+            }
+            c -= m;
+            for (i = 0, j = m-1; i<j; i++, j--) {
+                // swap without temporary
+                c[i] ^= c[j];
+                c[j] ^= c[i];
+                c[i] ^= c[j];
+            }
+            c += m;
+        }
+        *(c) = '\0';
+    }
+    return s;
+}
 
 double toDouble(char* s, int start, int stop) {
     int m = 1;
@@ -42,13 +118,13 @@ double getSign(char sign_char) {
     }
 }
 
-void parseGpsMsg(char* in_string, char* out_string) {
+void parseGpsMsg(char* in_string, char* out_string, int str_length) {
   char out_buffer[] = "";
   double lat_value = 0.0;
   double lon_value = 0.0;
   double temp_lon = 0.0;
   double temp_lat = 0.0;
-  int in_size = strlen(in_string);
+  int in_size = str_length;
   printf("In_String=%s\n", in_string);
   printf("%d\n", in_size);
   int i = 0;
@@ -58,6 +134,7 @@ void parseGpsMsg(char* in_string, char* out_string) {
   int value_seconds = 0;
   int value_end = 0;
   int minute_start = 0;
+  int valid_comma_count = 0;
   double sign = 0.0;
   for(i = 0; i <= in_size; i++) {
     if(value_count < 2) {
@@ -114,30 +191,68 @@ void parseGpsMsg(char* in_string, char* out_string) {
     }
     else if(value_count >= 2) {
       //check valid
-      switch(in_string[i]){
+      switch(in_string[i]) {
         case ',':
-          printf("comma!\n");
+          if(valid_comma_count == 1) {
+            if(in_string[i+1] == 'A'){
+              printf("DATA VALID\n");
+              char lat_char[MAX_NUMBER_STRING_SIZE];
+              char lon_char[MAX_NUMBER_STRING_SIZE];
+              dtoa(lat_char, lat_value);
+              dtoa(lon_char, lon_value);
+              for(i = 0; i <= 12; i++) {
+                out_string[0] = 'L';
+                out_string[1] = 'A';
+                out_string[2] = 'T';
+                out_string[3] = '=';
+                out_string[i+4] = lat_char[i];
+                out_string[17] = ' ';
+                out_string[18] = 'L';
+                out_string[19] = 'O';
+                out_string[20] = 'N';
+                out_string[21] = '=';
+                out_string[i+22] = lon_char[i];
+              }
+            }
+            else if(in_string[i+1] == 'V'){
+              printf("INVALID\n");
+              out_string[0] = 'I';
+              out_string[1] = 'N';
+              out_string[2] = 'V';
+              out_string[3] = 'A';
+              out_string[4] = 'L';
+              out_string[5] = 'I';
+              out_string[6] = 'D';
+            }
+            else {
+              printf("unsure: %c\n", in_string[i+1]);
+              out_string[0] = 'I';
+              out_string[1] = 'N';
+              out_string[2] = 'V';
+              out_string[3] = 'A';
+              out_string[4] = 'L';
+              out_string[5] = 'I';
+              out_string[6] = 'D';
+              out_string[7] = ' ';
+              out_string[8] = 'I';
+              out_string[9] = 'D';
+            }
+          }
+          valid_comma_count++;
           break;
         default:
         ;
       }
-      printf("VALID? = %c\n", in_string[i]);
     }
-  }
-  char message[in_size];// = strcat((char *)&lat_value, "\0");// +" done\0";
-  sprintf(message, "LAT=%f LON=%f", lat_value, lon_value);
-//  message = strcat(message, " done\0");
-  for(i = 0; i <= strlen(message); i++) {
-    out_string = &message[i];
-    out_string++;
   }
 }
 
 int main(int arg) {
-  char* in_string = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A\0";
-  char* out_string = malloc(strlen(in_string)+100);
+  int bufIndex = 46;
+  char* in_string = "$GPGLL,,,,,162404.00,V,N*4F";
+  char* out_string = malloc(bufIndex+100);
   printf("In_String=%s\n", in_string);
-  parseGpsMsg(in_string, out_string);
+  parseGpsMsg(in_string, out_string, bufIndex);
   printf("Out_String=%s\n", out_string);
   free(out_string);
 }
