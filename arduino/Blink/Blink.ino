@@ -1,8 +1,19 @@
+#include <SoftwareSerial.h>
+
+/*
+  Blink
+  Turns on an LED on for one second, then off for one second, repeatedly.
+ 
+  This example code is in the public domain.
+ */
+ 
 #include <stdio.h>
 #include <stdlib.h> 
 #include <math.h>
-
-typedef enum { false, true } bool;
+ 
+// Pin 13 has an LED connected on most Arduino boards.
+// give it a name:
+int led = 13;
 
 static double PRECISION = 0.00000000000001;
 static int MAX_NUMBER_STRING_SIZE = 32;
@@ -81,21 +92,21 @@ char * dtoa(char *s, double n) {
     return s;
 }
 
-double toDouble(char* s, int start, int stop) {
+double toDouble(String s, int start_bit, int stop_bit) {
     int m = 1;
     int i = 0;
     double ret = 0;
-    for (i = stop; i >= start; i--) {
+    for (i = stop_bit; i >= start_bit; i--) {
         ret += (s[i] - '0') * m;
         m *= 10;
     }
     return ret;
 }
-double toDoubleTenths(char* s, int start, int stop) {
+double toDoubleTenths(String s, int start_bit, int stop_bit) {
     int m = 1;
     int i = 0;
     char newChar[] = ".";
-    for (i = start; i <= stop; i++) {
+    for (i = start_bit; i <= stop_bit; i++) {
         newChar[m] = s[i];
         m++;
     }
@@ -118,17 +129,16 @@ double getSign(char sign_char) {
     }
 }
 
-void parseGpsMsg(char* in_string, char* out_string, int str_length) {
-  char out_buffer[] = "";
+String parseGpsMsg(String in_string, int str_length) {
+  String out_string = "";
   double lat_value = 0.0;
   double lon_value = 0.0;
   double temp_lon = 0.0;
   double temp_lat = 0.0;
-  int in_size = str_length;
-  printf("In_String=%s\n", in_string);
-  printf("%d\n", in_size);
+  Serial.println("In_String=" + in_string);
+  Serial.println(str_length);
   int i = 0;
-  bool reading = false;
+  boolean reading = false;
   int value_count = 0;
   int value_start = 0;
   int value_seconds = 0;
@@ -136,52 +146,71 @@ void parseGpsMsg(char* in_string, char* out_string, int str_length) {
   int minute_start = 0;
   int valid_comma_count = 0;
   double sign = 0.0;
-  for(i = 0; i <= in_size; i++) {
+  for(i = 0; i <= str_length; i++) {
     if(value_count < 2) {
-      printf("%c\n", in_string[i]);
+      Serial.println(in_string[i]);
       switch(in_string[i]){
         case ',':
           if(!reading) {
             reading = true;
-            printf("%s\n","Start of value");
+            Serial.println("Start of value");
             value_start = i+1;
           }
           else {
             reading = false;
-            printf("%s\n","End of value");
+            Serial.println("End of value");
+            delay(1000);
             value_end = i;
             double sign = getSign(in_string[i+1]);
-            printf("Sign=%f\n", sign);
+            Serial.println("Sign=");
+            Serial.println(sign);
+            delay(1000);
             if(value_count == 0) {
               temp_lat += toDoubleTenths(in_string, value_seconds, i-1);
-              printf("temp_lat=%f\n",temp_lat);
+              Serial.println("temp_lat=");
+              Serial.println(temp_lat);
+              delay(1000);
               lat_value += temp_lat/60.0;
               lat_value *= sign;
             }
             else {
               temp_lon += toDoubleTenths(in_string, value_seconds, i-1);
-              printf("temp_lon=%f\n",temp_lon);
+              Serial.println("temp_lon=");
+              Serial.println(temp_lon);
+              delay(1000);
               lon_value += temp_lon/60.0;
               lon_value *= sign;
             }
-            printf("LAT=%f LON=%f\n",lat_value, lon_value);
+            Serial.println("LAT=");
+            Serial.println("LON=");
+            Serial.println(lat_value);
+            Serial.println(lon_value);
+            delay(1000);
             value_count++;
           }
           break;
         case '.':
-          printf("%s\n","Found Decimal");
+          Serial.println("Found Decimal");
           if(reading) {
             if(value_count == 0) {
               lat_value += toDouble(in_string, value_start, i-3);
               temp_lat += toDouble(in_string, i-2, i-1);
-              printf("temp_lat=%f\n",temp_lat);
+              Serial.println("temp_lat=");
+              Serial.println(temp_lat);
+              delay(1000);
             }
             else {
               lon_value += toDouble(in_string, value_start, i-3);
               temp_lon += toDouble(in_string, i-2, i-1);
-              printf("temp_lon=%f\n",temp_lon);
+              Serial.println("temp_lon=");
+              Serial.println(temp_lon);
+              delay(1000);
             }
-            printf("LAT=%f LON=%f\n",lat_value, lon_value);
+            Serial.println("LAT=");
+            Serial.println("LON=");
+            Serial.println(lat_value);
+            Serial.println(lon_value);
+            delay(1000);
             value_seconds = i+1;
           }
           break;
@@ -195,47 +224,24 @@ void parseGpsMsg(char* in_string, char* out_string, int str_length) {
         case ',':
           if(valid_comma_count == 1) {
             if(in_string[i+1] == 'A'){
-              printf("DATA VALID\n");
+              Serial.println("DATA VALID");
+              delay(1000);
               char lat_char[MAX_NUMBER_STRING_SIZE];
               char lon_char[MAX_NUMBER_STRING_SIZE];
               dtoa(lat_char, lat_value);
               dtoa(lon_char, lon_value);
-              for(i = 0; i <= 12; i++) {
-                out_string[0] = 'L';
-                out_string[1] = 'A';
-                out_string[2] = 'T';
-                out_string[3] = '=';
-                out_string[i+4] = lat_char[i];
-                out_string[17] = ' ';
-                out_string[18] = 'L';
-                out_string[19] = 'O';
-                out_string[20] = 'N';
-                out_string[21] = '=';
-                out_string[i+22] = lon_char[i];
-              }
+              out_string = "LAT="+(String)lat_char+"LON="+(String)lon_char;
             }
             else if(in_string[i+1] == 'V'){
-              printf("INVALID\n");
-              out_string[0] = 'I';
-              out_string[1] = 'N';
-              out_string[2] = 'V';
-              out_string[3] = 'A';
-              out_string[4] = 'L';
-              out_string[5] = 'I';
-              out_string[6] = 'D';
+              Serial.println("INVALID\n");
+              delay(1000);
+              out_string = "INVALID";
             }
             else {
-              printf("unsure: %c\n", in_string[i+1]);
-              out_string[0] = 'I';
-              out_string[1] = 'N';
-              out_string[2] = 'V';
-              out_string[3] = 'A';
-              out_string[4] = 'L';
-              out_string[5] = 'I';
-              out_string[6] = 'D';
-              out_string[7] = ' ';
-              out_string[8] = 'I';
-              out_string[9] = 'D';
+              Serial.println("unsure: ");
+              Serial.println(in_string[i+1]);
+              delay(1000);
+              out_string = "INVALID ID";
             }
           }
           valid_comma_count++;
@@ -245,14 +251,34 @@ void parseGpsMsg(char* in_string, char* out_string, int str_length) {
       }
     }
   }
+  return out_string;
 }
 
-int main(int arg) {
+String mytest(String in) {
+  Serial.println(in);
+  return "Did it";
+}
+
+// the setup routine runs once when you press reset:
+void setup() {                
+  // initialize the digital pin as an output.
+  pinMode(led, OUTPUT);     
+  Serial.begin(9600);
   int bufIndex = 46;
-  char* in_string = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
-  char* out_string = malloc(bufIndex+100);
-  printf("In_String=%s\n", in_string);
-  parseGpsMsg(in_string, out_string, bufIndex);
-  printf("Out_String=%s\n", out_string);
-  free(out_string);
+  String in_string = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
+  String finished = "";
+  //double tenths = toDoubleTenths(in_string, 8, 11);
+  finished = parseGpsMsg(in_string, bufIndex);
+  Serial.println("DONE!!!!!");
+  Serial.println(finished);
+}
+
+// the loop routine runs over and over again forever:
+void loop() {
+  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
+  Serial.println("On");
+  delay(1000);               // wait for a second
+  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
+  Serial.println("Off");
+  delay(1000);               // wait for a second
 }

@@ -80,9 +80,22 @@ char * dtoa(char *s, double n) {
     return s;
 }
 
+double toDouble(char* s, int start, int stop) {
+    int m = 1;
+    int i = 0;
+    double ret = 0;
+    for (i = stop; i >= start; i--) {
+        ret += (s[i] - '0') * m;
+        m *= 10;
+    }
+    return ret;
+}
+
 int main(int arg) {
-  double myDoub = 123.45;
+  char* begin = "401.08";
+  double myDoub = toDouble(begin,0,2);
   printf("double=%f\n",myDoub);
-  char s[MAX_NUMBER_STRING_SIZE];
+  char* s = malloc(MAX_NUMBER_STRING_SIZE);
   printf("char=%s\n",dtoa(s, myDoub));
+  free(s);
 }
