@@ -267,7 +267,6 @@ void setup() {
   int bufIndex = 46;
   String in_string = "LL,4014.84954,N,11138.89767,W,162408.00,A,A*7A";
   String finished = "";
-  //double tenths = toDoubleTenths(in_string, 8, 11);
   finished = parseGpsMsg(in_string, bufIndex);
   Serial.println("DONE!!!!!");
   Serial.println(finished);
